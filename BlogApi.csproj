@@ -21,8 +21,4 @@
       <Compile Remove="Controllers\WeatherForecastController.cs" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="Controllers" />
-    </ItemGroup>
-
 </Project>
