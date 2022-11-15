@@ -1,6 +1,6 @@
 namespace BlogApi;
 
-public class WeatherForecast
+public class eatherForecast
 {
     public DateOnly Date { get; set; }
 
