@@ -22,7 +22,7 @@ public class AccountController : ControllerBase
     }
 
     [HttpPost("v1/accounts")]
-    public async Task<IActionResult> Post(RegisterDto modelDto)
+    public async Task<IActionResult> PostAsync(RegisterDto modelDto)
     {
         if (!ModelState.IsValid)
             return BadRequest(new ResultDto<string>(ModelState.GetErrors()));
@@ -58,10 +58,30 @@ public class AccountController : ControllerBase
     }
 
     [HttpPost("v1/accounts/login")]
-    public IActionResult Login()
+    public async Task<IActionResult> LoginAsync(LoginDto modelDto)
     {
-        var token = _tokenService.GenerateToken(null);
+        if (!ModelState.IsValid)
+            return BadRequest(new ResultDto<string>(ModelState.GetErrors()));
 
-        return Ok(token);
+        var user = await _context.Users
+            .AsNoTracking()
+            .Include(u => u.Roles)
+            .FirstOrDefaultAsync(x => x.Email == modelDto.Email);
+
+        if (user is null)
+            return StatusCode(401, new ResultDto<string>("Usuário ou senha inválidos"));
+
+        if (!PasswordHasher.Verify(user.PasswordHash, modelDto.Password))
+            return StatusCode(401, new ResultDto<string>("Usuário ou senha inválidos"));
+
+        try
+        {
+            var token = _tokenService.GenerateToken(user);
+            return Ok(new ResultDto<string>(token, null));
+        }
+        catch
+        {
+            return StatusCode(500, new ResultDto<string>("05X04 - Falha interna no servidor"));
+        }
     }
 }
