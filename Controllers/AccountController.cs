@@ -12,17 +12,17 @@ namespace BlogApi.Controllers;
 [ApiController]
 public class AccountController : ControllerBase
 {
-    private readonly TokenService _tokenService;
     private readonly BlogDataContext _context;
+    private readonly TokenService _tokenService;
 
-    public AccountController(TokenService tokenService, BlogDataContext context)
+    public AccountController(BlogDataContext context, TokenService tokenService)
     {
-        _tokenService = tokenService;
         _context = context;
+        _tokenService = tokenService;
     }
 
     [HttpPost("v1/accounts")]
-    public async Task<IActionResult> PostAsync(RegisterDto modelDto)
+    public async Task<IActionResult> PostAsync(RegisterDto modelDto, EmailService emailService)
     {
         if (!ModelState.IsValid)
             return BadRequest(new ResultDto<string>(ModelState.GetErrors()));
@@ -42,9 +42,16 @@ public class AccountController : ControllerBase
             await _context.Users.AddAsync(user);
             await _context.SaveChangesAsync();
 
+            emailService.Send(
+                user.Name,
+                user.Email,
+                "Bem vindo ao blog!",
+                $"Sua senha é <strong>{password}</strong>"
+            );
+
             return Ok(new ResultDto<dynamic>(new
             {
-                user = user.Email, password
+                user = user.Email
             }));
         }
         catch (DbUpdateException)
@@ -84,4 +91,6 @@ public class AccountController : ControllerBase
             return StatusCode(500, new ResultDto<string>("05X04 - Falha interna no servidor"));
         }
     }
+    
+    
 }
