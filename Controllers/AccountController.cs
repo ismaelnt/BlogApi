@@ -1,8 +1,11 @@
+using System.Text.RegularExpressions;
 using BlogApi.Data;
 using BlogApi.Dtos;
+using BlogApi.Dtos.Accounts;
 using BlogApi.Extensions;
 using BlogApi.Models;
 using BlogApi.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SecureIdentity.Password;
@@ -91,6 +94,40 @@ public class AccountController : ControllerBase
             return StatusCode(500, new ResultDto<string>("05X04 - Falha interna no servidor"));
         }
     }
-    
-    
+
+    [HttpPost("v1/accounts/upload-image"), Authorize]
+    public async Task<IActionResult> UploadImageAsync(UploadImageDto modelDto)
+    {
+        var fileName = $"{Guid.NewGuid().ToString()}.jpg";
+        var data = new Regex(@"^data:image\/[a-z]+;base64,").Replace(modelDto.Base64Image, "");
+        var bytes = Convert.FromBase64String(data);
+
+        try
+        {
+            await System.IO.File.WriteAllBytesAsync($"wwwroot/images/{fileName}", bytes);
+        }
+        catch
+        {
+            return StatusCode(500, new ResultDto<string>("05X04 - Falha interna no servidor"));
+        }
+
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == User.Identity.Name);
+
+        if (user is null)
+            return NotFound(new ResultDto<User>("Usuário não encontrado"));
+
+        user.Image = $"https://localhost:0000/images/{fileName}";
+
+        try
+        {
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
+        }
+        catch
+        {
+            return StatusCode(500, new ResultDto<string>("05X04 - Falha interna no servidor"));
+        }
+
+        return Ok(new ResultDto<string>("Imagem alterada com sucesso!", null));
+    }
 }

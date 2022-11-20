@@ -1,5 +1,6 @@
 using BlogApi.Data;
 using BlogApi.Dtos;
+using BlogApi.Dtos.Categories;
 using BlogApi.Extensions;
 using BlogApi.Models;
 using Microsoft.AspNetCore.Mvc;
